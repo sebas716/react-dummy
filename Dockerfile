@@ -1,20 +1,30 @@
-# Fase 1: Utiliza una imagen de Node.js como base
-FROM node:18
+# Establecer la imagen base
+FROM node:16-alpine AS build
 
-# Establece el directorio de trabajo en el contenedor
+# Establecer el directorio de trabajo dentro del contenedor
 WORKDIR /app
 
-# Copia el package.json y package-lock.json al contenedor
+# Copiar el package.json y el package-lock.json
 COPY package*.json ./
 
-# Instala las dependencias
+# Instalar las dependencias
 RUN npm install
 
-# Copia el resto del código fuente de la aplicación al contenedor
+# Copiar el código fuente
 COPY . .
 
-# Expone el puerto 3000 para acceder a la aplicación
-EXPOSE 3000
+# Construir la aplicación para producción
+RUN npm run build
 
-# Ejecuta la aplicación en modo desarrollo
-CMD ["npm", "start"]
+# Servir la aplicación usando un servidor web ligero como Nginx
+FROM nginx:alpine
+
+# Copiar los archivos de la aplicación construida a la carpeta pública de Nginx
+COPY --from=build /app/build /usr/share/nginx/html
+
+# Exponer el puerto 80
+EXPOSE 80
+
+# Comando para iniciar Nginx
+CMD ["nginx", "-g", "daemon off;"]
+
